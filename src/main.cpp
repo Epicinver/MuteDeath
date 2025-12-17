@@ -34,11 +34,5 @@ public:
 	{
 		// the stinky menu
 		log::info("stinky mod settings clicked");
-		// ill add this soon ig so placeholder
-		FLAlertLayer::create(
-			"settings",
-			"This is where Mute Death settings would go, but i have to upload to github. This is a placeholder and is not permanent.",
-			"Alright")
-			->show();
-	}
+		}
 };
