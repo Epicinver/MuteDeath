@@ -1,6 +1,6 @@
 # Mute Death mod
 
-Allows you to mute, unmute, and customize the death sound effect!
+Allows you to customize the death sound effect!
 
 ### Please leave suggestions in the repository issues/pull requests tab!
 
