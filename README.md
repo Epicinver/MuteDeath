@@ -15,7 +15,7 @@ If you're viewing in GitHub, please do give me suggestions! I'm new to C++ and G
 ```
 Thanks!
 
-## Features
+## (soon) Features
 
 You may:
 
