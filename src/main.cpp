@@ -37,20 +37,21 @@ public:
 
 		auto winSize = CCDirector::sharedDirector()->getWinSize();
 
-		auto overlay = CCLayerColor::create({0, 0, 0, 140});
+		auto overlay = CCLayerColor::create({0, 0, 0, 120});
 		overlay->setContentSize(winSize);
 		overlay->setPosition({0, 0});
 		this->addChild(overlay, 0);
 
 		m_panel = CCScale9Sprite::createWithSpriteFrameName("GJ_square01.png");
-		m_panel->setContentSize({380.f, 260.f});
+		m_panel->setContentSize({360.f, 240.f});
 		m_panel->setPosition(winSize / 2);
+		m_panel->setOpacity(255);
 		this->addChild(m_panel, 1);
 
 		auto title = CCLabelBMFont::create("Mute Death Options", "goldFont.fnt");
 		title->setScale(0.55f);
 		title->setPosition({m_panel->getPositionX(),
-							m_panel->getPositionY() + (m_panel->getContentSize().height / 2) - 28.f});
+							m_panel->getPositionY() + (m_panel->getContentSize().height / 2) - 26.f});
 		this->addChild(title, 2);
 
 		auto menu = CCMenu::create();
@@ -60,35 +61,43 @@ public:
 		bool muted = Mod::get()->getSavedValue<bool>("mute_death_sfx", false);
 		bool useCustom = Mod::get()->getSavedValue<bool>("use_custom_death", false);
 
-		auto onSpr = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
-		auto offSpr = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
-		onSpr->setScale(0.6f);
-		offSpr->setScale(0.6f);
+		auto offSpr = CCSprite::createWithSpriteFrameName("GJ_checkOff_001.png");
+		auto onSpr = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
 
 		auto muteToggle = CCMenuItemToggler::create(
-			onSpr,
 			offSpr,
+			onSpr,
 			this,
 			menu_selector(ModSettingsLayer::onMuteToggle));
 		muteToggle->toggle(muted);
-		muteToggle->setPosition({0.f, 40.f});
+		muteToggle->setPosition({-130.f, 35.f});
 		menu->addChild(muteToggle);
 
-		auto cOn = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
-		auto cOff = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
-		cOn->setScale(0.6f);
-		cOff->setScale(0.6f);
+		auto muteLabel = CCLabelBMFont::create("Mute Death Sound", "goldFont.fnt");
+		muteLabel->setAnchorPoint({0.f, 0.5f});
+		muteLabel->setScale(0.45f);
+		muteLabel->setPosition({-100.f, 35.f});
+		menu->addChild(muteLabel);
+
+		auto cOff = CCSprite::createWithSpriteFrameName("GJ_checkOff_001.png");
+		auto cOn = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
 
 		auto customToggle = CCMenuItemToggler::create(
-			cOn,
 			cOff,
+			cOn,
 			this,
 			menu_selector(ModSettingsLayer::onCustomToggle));
 		customToggle->toggle(useCustom);
-		customToggle->setPosition({0.f, 0.f});
+		customToggle->setPosition({-130.f, 0.f});
 		menu->addChild(customToggle);
 
-		m_pathInput = TextInput::create(260.f, "Insert path here");
+		auto customLabel = CCLabelBMFont::create("Use Custom Death Sound", "goldFont.fnt");
+		customLabel->setAnchorPoint({0.f, 0.5f});
+		customLabel->setScale(0.45f);
+		customLabel->setPosition({-100.f, 0.f});
+		menu->addChild(customLabel);
+
+		m_pathInput = TextInput::create(250.f, "Insert path here");
 		m_pathInput->setPosition({0.f, -60.f});
 		m_pathInput->setScale(0.9f);
 
@@ -103,17 +112,18 @@ public:
 
 		auto closeSprite = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
 		closeSprite->setScale(0.7f);
+
 		auto closeBtn = CCMenuItemSpriteExtra::create(
 			closeSprite,
 			this,
 			menu_selector(ModSettingsLayer::onClose));
-		closeBtn->setPosition({(m_panel->getContentSize().width / 2) - 24.f,
-							   (m_panel->getContentSize().height / 2) - 24.f});
+		closeBtn->setPosition({(m_panel->getContentSize().width / 2) - 22.f,
+							   (m_panel->getContentSize().height / 2) - 22.f});
 		menu->addChild(closeBtn);
 
-		m_panel->setScale(0.85f);
-		m_panel->runAction(CCEaseBackOut::create(
-			CCScaleTo::create(0.20f, 1.0f)));
+		m_panel->setScale(0.9f);
+		m_panel->runAction(
+			CCEaseBackOut::create(CCScaleTo::create(0.18f, 1.0f)));
 
 		return true;
 	}
