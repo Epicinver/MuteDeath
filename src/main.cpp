@@ -1,14 +1,11 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
 using namespace geode::prelude;
-
 static bool g_modSettingsOpen = false;
-
 class ModSettingsLayer : public CCLayer
 {
 public:
-	CCSprite *m_panel;
-
+	CCScale9Sprite *m_panel = nullptr;
 	static ModSettingsLayer *create()
 	{
 		auto ret = new ModSettingsLayer();
@@ -20,120 +17,112 @@ public:
 		CC_SAFE_DELETE(ret);
 		return nullptr;
 	}
-
-	bool init()
+	bool init() override
 	{
 		if (!CCLayer::init())
 			return false;
+
+		g_modSettingsOpen = true;
 
 		this->setTouchEnabled(true);
 		this->setKeypadEnabled(true);
 
 		auto winSize = CCDirector::sharedDirector()->getWinSize();
-
-		// === Outside dim (ONLY outside transparency) ===
 		auto overlay = CCLayerColor::create({0, 0, 0, 140});
+
 		overlay->setContentSize(winSize);
 		overlay->setPosition({0, 0});
+
 		this->addChild(overlay, 0);
 
-		// === Solid panel ===
-		m_panel = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
-		m_panel->setScale(6.0f);
+		m_panel = CCScale9Sprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
+		m_panel->setContentSize({380.f, 260.f});
 		m_panel->setPosition(winSize / 2);
+		m_panel->setOpacity(255);
 		this->addChild(m_panel, 1);
 
-		// === Menu container ===
+		auto title = CCLabelBMFont::create("MOD SETTINGS", "bigFont.fnt");
+		title->setScale(0.55f);
+		title->setPosition({m_panel->getPositionX(),
+							m_panel->getPositionY() + (m_panel->getContentSize().height / 2) - 28.f});
+		this->addChild(title, 2);
 		auto menu = CCMenu::create();
-		menu->setPosition(winSize / 2);
-		this->addChild(menu, 2);
-
-		// === Close button ===
+		menu->setPosition(m_panel->getPosition());
+		this->addChild(menu, 3);
 		auto closeSprite = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
-		closeSprite->setScale(0.7f);
-
+		closeSprite->setScale(0.6f);
 		auto closeBtn = CCMenuItemSpriteExtra::create(
 			closeSprite,
 			this,
 			menu_selector(ModSettingsLayer::onClose));
-
-		closeBtn->setPosition({170.f, 110.f});
+		closeBtn->setPosition({(m_panel->getContentSize().width / 2) - 24.f,
+							   (m_panel->getContentSize().height / 2) - 24.f});
 		menu->addChild(closeBtn);
-
+		m_panel->setScale(0.85f);
+		m_panel->runAction(CCEaseBackOut::create(CCScaleTo::create(0.20f, 1.0f)));
 		return true;
 	}
-
-	// === Outside click detection (SAFE + SIMPLE) ===
+	void registerWithTouchDispatcher() override
+	{
+		CCDirector::sharedDirector()
+			->getTouchDispatcher()
+			->addTargetedDelegate(this, -500, true);
+	}
 	bool ccTouchBegan(CCTouch *touch, CCEvent *) override
 	{
 		auto p = this->convertTouchToNodeSpace(touch);
-
-		auto size = m_panel->getContentSize() * m_panel->getScale();
-		auto pos = m_panel->getPosition();
-
-		CCRect panelRect(
-			pos.x - size.width / 2,
-			pos.y - size.height / 2,
-			size.width,
-			size.height);
-
-		// Outside → close
-		if (!panelRect.containsPoint(p))
+		auto rect = m_panel->boundingBox();
+		if (!rect.containsPoint(p))
 		{
 			onClose(nullptr);
-			return true;
 		}
-
-		// Inside → let menu handle it
-		return false;
+		return true;
 	}
-
 	void onClose(CCObject *)
 	{
-		g_modSettingsOpen = false;
 		this->removeFromParentAndCleanup(true);
 	}
-
 	void keyBackClicked() override
 	{
 		onClose(nullptr);
 	}
+	void onExit() override
+	{
+		g_modSettingsOpen = false;
+		CCLayer::onExit();
+	}
 };
-
 class $modify(MyMenuLayer, MenuLayer)
 {
 public:
 	bool init()
 	{
 		if (!MenuLayer::init())
-		{
 			return false;
+		auto menu = this->getChildByID("bottom-menu");
+		if (!menu)
+		{
+			log::warn("bottom-menu not found");
+			return true;
 		}
-
-		// button creation (only thing in the mod that we use mostly)
+		auto spr = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
+		spr->setScale(0.9f);
 		auto modSettings = CCMenuItemSpriteExtra::create(
-			CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png"),
+			spr,
 			this,
 			menu_selector(MyMenuLayer::onModSettings));
-
-		log::info("adding button");
-
-		auto menu = this->getChildByID("bottom-menu");
-		menu->addChild(modSettings);
-
 		modSettings->setID("mod-settings"_spr);
-
+		menu->addChild(modSettings);
 		menu->updateLayout();
-
 		return true;
 	}
-
 	void onModSettings(CCObject *)
 	{
+		// e
 		if (g_modSettingsOpen)
 			return;
 
-		g_modSettingsOpen = true;
+		log::info("ok open menu");
 
 		CCDirector::sharedDirector()
 			->getRunningScene()
