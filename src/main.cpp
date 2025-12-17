@@ -5,6 +5,10 @@ using namespace geode::prelude;
 class ModSettingsLayer : public CCLayer
 {
 public:
+	static bool s_open;
+
+	CCSprite *m_panel = nullptr;
+
 	static ModSettingsLayer *create()
 	{
 		auto ret = new ModSettingsLayer();
@@ -22,64 +26,57 @@ public:
 		if (!CCLayer::init())
 			return false;
 
+		s_open = true;
+
 		this->setTouchEnabled(true);
 		this->setKeypadEnabled(true);
 
 		auto winSize = CCDirector::sharedDirector()->getWinSize();
 
-		// === Dark overlay ===
-		auto overlay = CCLayerColor::create({0, 0, 0, 160});
+		// === Outside overlay (transparent, clickable) ===
+		auto overlay = CCLayerColor::create({0, 0, 0, 120});
+		overlay->setContentSize(winSize);
+		overlay->setPosition({0, 0});
 		this->addChild(overlay);
 
-		// === Panel ===
-		auto panel = CCScale9Sprite::create("GJ_square01.png");
-		panel->setContentSize({360.f, 240.f});
-		panel->setPosition(winSize / 2);
-		panel->setOpacity(220);
-		this->addChild(panel);
+		// === Swallow touches INSIDE panel ===
+		auto touchBlocker = CCLayer::create();
+		touchBlocker->setTouchEnabled(true);
+		touchBlocker->setContentSize({400.f, 260.f});
+		touchBlocker->setPosition({winSize.width / 2 - 200.f,
+								   winSize.height / 2 - 130.f});
+		this->addChild(touchBlocker, 1);
 
-		// === Title ===
-		auto title = CCLabelBMFont::create("MOD SETTINGS", "bigFont.fnt");
-		title->setScale(0.6f);
-		title->setPosition({panel->getPositionX(),
-							panel->getPositionY() + panel->getContentSize().height / 2 - 30});
-		this->addChild(title);
+		// === Panel (NO transparency) ===
+		m_panel = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
+		m_panel->setScale(6.0f);
+		m_panel->setPosition(winSize / 2);
+		this->addChild(m_panel, 2);
 
 		// === Menu ===
 		auto menu = CCMenu::create();
-		menu->setPosition(panel->getPosition());
-		this->addChild(menu);
+		menu->setPosition(winSize / 2);
+		this->addChild(menu, 3);
 
-		// === Close button (top-right) ===
-		auto closeCircle = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
-		closeCircle->setScale(0.7f);
+		// === Close button ===
+		auto closeSprite = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
+		closeSprite->setScale(0.8f);
 
 		auto closeBtn = CCMenuItemSpriteExtra::create(
-			closeCircle,
+			closeSprite,
 			this,
 			menu_selector(ModSettingsLayer::onClose));
 
-		closeBtn->setPosition({panel->getContentSize().width / 2 - 18,
-							   panel->getContentSize().height / 2 - 18});
-
-		auto closeIcon = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
-		closeIcon->setPosition(closeCircle->getContentSize() / 2);
-		closeCircle->addChild(closeIcon);
-
+		closeBtn->setPosition({160.f, 100.f});
 		menu->addChild(closeBtn);
 
-		// === SETTINGS ===
+		// === Toggles ===
 		float startY = 40.f;
 		float spacing = 40.f;
 
 		addToggle(menu, "ENABLE HACK", startY, "enable_hack");
 		addToggle(menu, "SHOW HITBOXES", startY - spacing, "show_hitboxes");
 		addToggle(menu, "FPS BYPASS", startY - spacing * 2, "fps_bypass");
-
-		// === Pop-in animation ===
-		panel->setScale(0.8f);
-		panel->runAction(CCEaseBackOut::create(
-			CCScaleTo::create(0.25f, 1.f)));
 
 		return true;
 	}
@@ -95,12 +92,16 @@ public:
 
 		bool enabled = Mod::get()->getSavedValue<bool>(key, false);
 
+		auto onSprite = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
+		auto offSprite = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
+
 		auto toggle = CCMenuItemToggler::create(
-			CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png"),
-			CCSprite::createWithSpriteFrameName("GJ_checkOff_001.png"),
+			onSprite,
+			offSprite,
 			this,
 			menu_selector(ModSettingsLayer::onToggle));
 
+		toggle->setScale(0.6f);
 		toggle->setPosition({130.f, y});
 		toggle->setTag(reinterpret_cast<intptr_t>(new std::string(key)));
 		toggle->toggle(enabled);
@@ -108,7 +109,6 @@ public:
 		menu->addChild(toggle);
 	}
 
-	// === Toggle handler ===
 	void onToggle(CCObject *sender)
 	{
 		auto toggle = static_cast<CCMenuItemToggler *>(sender);
@@ -116,22 +116,30 @@ public:
 
 		bool enabled = toggle->isToggled();
 		Mod::get()->setSavedValue(*keyPtr, enabled);
-
-		log::info("{} = {}", *keyPtr, enabled);
 	}
 
 	// === Close ===
 	void onClose(CCObject *)
 	{
+		s_open = false;
 		this->removeFromParentAndCleanup(true);
 	}
 
-	// === ESC key ===
+	// === Click outside ===
+	bool ccTouchBegan(CCTouch *, CCEvent *) override
+	{
+		onClose(nullptr);
+		return true;
+	}
+
+	// === ESC ===
 	void keyBackClicked() override
 	{
 		onClose(nullptr);
 	}
 };
+
+bool ModSettingsLayer::s_open = false;
 
 class $modify(MyMenuLayer, MenuLayer)
 {
