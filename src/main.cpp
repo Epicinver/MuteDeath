@@ -1,45 +1,6 @@
 #include <Geode/Geode.hpp>
-using namespace geode::prelude;
-
 #include <Geode/modify/MenuLayer.hpp>
-class $modify(MyMenuLayer, MenuLayer)
-{
-public:
-	bool init()
-	{
-		if (!MenuLayer::init())
-		{
-			return false;
-		}
-
-		// button creation (only thing in the mod that we use mostly)
-		auto modSettings = CCMenuItemSpriteExtra::create(
-			CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png"),
-			this,
-			menu_selector(MyMenuLayer::onModSettings));
-
-		log::info("adding button");
-
-		auto menu = this->getChildByID("bottom-menu");
-		menu->addChild(modSettings);
-
-		modSettings->setID("mod-settings"_spr);
-
-		menu->updateLayout();
-
-		return true;
-	}
-
-	void onModSettings(CCObject *)
-	{
-		log::info("mod settings clicked");
-
-		// Menu
-		CCDirector::sharedDirector()
-			->getRunningScene()
-			->addChild(ModSettingsLayer::create(), 999);
-	}
-};
+using namespace geode::prelude;
 
 class ModSettingsLayer : public CCLayer
 {
@@ -94,5 +55,44 @@ public:
 	void onClose(CCObject *)
 	{
 		this->removeFromParentAndCleanup(true);
+	}
+};
+
+class $modify(MyMenuLayer, MenuLayer)
+{
+public:
+	bool init()
+	{
+		if (!MenuLayer::init())
+		{
+			return false;
+		}
+
+		// button creation (only thing in the mod that we use mostly)
+		auto modSettings = CCMenuItemSpriteExtra::create(
+			CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png"),
+			this,
+			menu_selector(MyMenuLayer::onModSettings));
+
+		log::info("adding button");
+
+		auto menu = this->getChildByID("bottom-menu");
+		menu->addChild(modSettings);
+
+		modSettings->setID("mod-settings"_spr);
+
+		menu->updateLayout();
+
+		return true;
+	}
+
+	void onModSettings(CCObject *)
+	{
+		log::info("mod settings clicked");
+
+		// Menu
+		CCDirector::sharedDirector()
+			->getRunningScene()
+			->addChild(ModSettingsLayer::create(), 999);
 	}
 };
