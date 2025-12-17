@@ -2,12 +2,12 @@
 #include <Geode/modify/MenuLayer.hpp>
 using namespace geode::prelude;
 
+static bool g_modSettingsOpen = false;
+
 class ModSettingsLayer : public CCLayer
 {
 public:
-	static bool s_open;
-
-	CCSprite *m_panel = nullptr;
+	CCSprite *m_panel;
 
 	static ModSettingsLayer *create()
 	{
@@ -26,120 +26,79 @@ public:
 		if (!CCLayer::init())
 			return false;
 
-		s_open = true;
-
 		this->setTouchEnabled(true);
 		this->setKeypadEnabled(true);
 
 		auto winSize = CCDirector::sharedDirector()->getWinSize();
 
-		// === Outside overlay (transparent, clickable) ===
-		auto overlay = CCLayerColor::create({0, 0, 0, 120});
+		// === Outside dim (ONLY outside transparency) ===
+		auto overlay = CCLayerColor::create({0, 0, 0, 140});
 		overlay->setContentSize(winSize);
 		overlay->setPosition({0, 0});
-		this->addChild(overlay);
+		this->addChild(overlay, 0);
 
-		// === Swallow touches INSIDE panel ===
-		auto touchBlocker = CCLayer::create();
-		touchBlocker->setTouchEnabled(true);
-		touchBlocker->setContentSize({400.f, 260.f});
-		touchBlocker->setPosition({winSize.width / 2 - 200.f,
-								   winSize.height / 2 - 130.f});
-		this->addChild(touchBlocker, 1);
-
-		// === Panel (NO transparency) ===
+		// === Solid panel ===
 		m_panel = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
 		m_panel->setScale(6.0f);
 		m_panel->setPosition(winSize / 2);
-		this->addChild(m_panel, 2);
+		this->addChild(m_panel, 1);
 
-		// === Menu ===
+		// === Menu container ===
 		auto menu = CCMenu::create();
 		menu->setPosition(winSize / 2);
-		this->addChild(menu, 3);
+		this->addChild(menu, 2);
 
 		// === Close button ===
 		auto closeSprite = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
-		closeSprite->setScale(0.8f);
+		closeSprite->setScale(0.7f);
 
 		auto closeBtn = CCMenuItemSpriteExtra::create(
 			closeSprite,
 			this,
 			menu_selector(ModSettingsLayer::onClose));
 
-		closeBtn->setPosition({160.f, 100.f});
+		closeBtn->setPosition({170.f, 110.f});
 		menu->addChild(closeBtn);
-
-		// === Toggles ===
-		float startY = 40.f;
-		float spacing = 40.f;
-
-		addToggle(menu, "ENABLE HACK", startY, "enable_hack");
-		addToggle(menu, "SHOW HITBOXES", startY - spacing, "show_hitboxes");
-		addToggle(menu, "FPS BYPASS", startY - spacing * 2, "fps_bypass");
 
 		return true;
 	}
 
-	// === Toggle row ===
-	void addToggle(CCMenu *menu, const char *text, float y, const std::string &key)
+	// === Outside click detection (SAFE + SIMPLE) ===
+	bool ccTouchBegan(CCTouch *touch, CCEvent *) override
 	{
-		auto label = CCLabelBMFont::create(text, "goldFont.fnt");
-		label->setScale(0.45f);
-		label->setAnchorPoint({0.f, 0.5f});
-		label->setPosition({-130.f, y});
-		menu->addChild(label);
+		auto p = this->convertTouchToNodeSpace(touch);
 
-		bool enabled = Mod::get()->getSavedValue<bool>(key, false);
+		auto size = m_panel->getContentSize() * m_panel->getScale();
+		auto pos = m_panel->getPosition();
 
-		auto onSprite = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
-		auto offSprite = CCSprite::createWithSpriteFrameName("GJ_fxOnBtn_001.png");
+		CCRect panelRect(
+			pos.x - size.width / 2,
+			pos.y - size.height / 2,
+			size.width,
+			size.height);
 
-		auto toggle = CCMenuItemToggler::create(
-			onSprite,
-			offSprite,
-			this,
-			menu_selector(ModSettingsLayer::onToggle));
+		// Outside → close
+		if (!panelRect.containsPoint(p))
+		{
+			onClose(nullptr);
+			return true;
+		}
 
-		toggle->setScale(0.6f);
-		toggle->setPosition({130.f, y});
-		toggle->setTag(reinterpret_cast<intptr_t>(new std::string(key)));
-		toggle->toggle(enabled);
-
-		menu->addChild(toggle);
+		// Inside → let menu handle it
+		return false;
 	}
 
-	void onToggle(CCObject *sender)
-	{
-		auto toggle = static_cast<CCMenuItemToggler *>(sender);
-		auto keyPtr = reinterpret_cast<std::string *>(toggle->getTag());
-
-		bool enabled = toggle->isToggled();
-		Mod::get()->setSavedValue(*keyPtr, enabled);
-	}
-
-	// === Close ===
 	void onClose(CCObject *)
 	{
-		s_open = false;
+		g_modSettingsOpen = false;
 		this->removeFromParentAndCleanup(true);
 	}
 
-	// === Click outside ===
-	bool ccTouchBegan(CCTouch *, CCEvent *) override
-	{
-		onClose(nullptr);
-		return true;
-	}
-
-	// === ESC ===
 	void keyBackClicked() override
 	{
 		onClose(nullptr);
 	}
 };
-
-bool ModSettingsLayer::s_open = false;
 
 class $modify(MyMenuLayer, MenuLayer)
 {
@@ -171,9 +130,11 @@ public:
 
 	void onModSettings(CCObject *)
 	{
-		log::info("mod settings clicked");
+		if (g_modSettingsOpen)
+			return;
 
-		// Menu
+		g_modSettingsOpen = true;
+
 		CCDirector::sharedDirector()
 			->getRunningScene()
 			->addChild(ModSettingsLayer::create(), 999);
