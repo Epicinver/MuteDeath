@@ -32,6 +32,9 @@ public:
 
 		g_modSettingsOpen = true;
 
+		CCSpriteFrameCache::sharedSpriteFrameCache()
+			->addSpriteFramesWithFile("ui.plist");
+
 		this->setTouchEnabled(true);
 		this->setKeypadEnabled(true);
 
@@ -42,9 +45,10 @@ public:
 		overlay->setPosition({0, 0});
 		this->addChild(overlay, 0);
 
-		m_panel = CCScale9Sprite::create("GJ_square01.png");
+		m_panel = CCScale9Sprite::createWithSpriteFrameName("GJ_square01.png");
 		m_panel->setContentSize({360.f, 240.f});
 		m_panel->setPosition(winSize / 2);
+		m_panel->setColor({255, 255, 255});
 		m_panel->setOpacity(255);
 		this->addChild(m_panel, 1);
 
@@ -62,8 +66,8 @@ public:
 		bool muted = Mod::get()->getSavedValue<bool>("mute_death_sfx", false);
 		bool useCustom = Mod::get()->getSavedValue<bool>("use_custom_death", false);
 
-		auto offSpr = CCSprite::create("GJ_checkOff_001.png");
-		auto onSpr = CCSprite::create("GJ_checkOn_001.png");
+		auto offSpr = CCSprite::createWithSpriteFrameName("GJ_checkOff_001.png");
+		auto onSpr = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
 
 		auto muteToggle = CCMenuItemToggler::create(
 			offSpr,
@@ -80,8 +84,8 @@ public:
 		muteLabel->setPosition({-100.f, 35.f});
 		menu->addChild(muteLabel);
 
-		auto cOff = CCSprite::create("GJ_checkOff_001.png");
-		auto cOn = CCSprite::create("GJ_checkOn_001.png");
+		auto cOff = CCSprite::createWithSpriteFrameName("GJ_checkOff_001.png");
+		auto cOn = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
 
 		auto customToggle = CCMenuItemToggler::create(
 			cOff,
@@ -111,7 +115,7 @@ public:
 
 		menu->addChild(m_pathInput);
 
-		auto closeSprite = CCSprite::create("GJ_closeBtn_001.png");
+		auto closeSprite = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
 		closeSprite->setScale(0.7f);
 
 		auto closeBtn = CCMenuItemSpriteExtra::create(
@@ -123,7 +127,8 @@ public:
 		menu->addChild(closeBtn);
 
 		m_panel->setScale(0.9f);
-		m_panel->runAction(CCEaseBackOut::create(CCScaleTo::create(0.18f, 1.0f)));
+		m_panel->runAction(
+			CCEaseBackOut::create(CCScaleTo::create(0.18f, 1.0f)));
 
 		return true;
 	}
@@ -150,11 +155,13 @@ public:
 	bool ccTouchBegan(CCTouch *touch, CCEvent *) override
 	{
 		auto p = this->convertTouchToNodeSpace(touch);
+
 		if (!m_panel->boundingBox().containsPoint(p))
 		{
 			onClose(nullptr);
 			return true;
 		}
+
 		return false;
 	}
 
