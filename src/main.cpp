@@ -2,11 +2,11 @@
 #include <Geode/modify/MenuLayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
 #include <Geode/ui/TextInput.hpp>
+#include <filesystem>
 
 using namespace geode::prelude;
 
 static bool g_modSettingsOpen = false;
-
 class ModSettingsLayer : public CCLayer
 {
 public:
@@ -42,7 +42,7 @@ public:
 		overlay->setPosition({0, 0});
 		this->addChild(overlay, 0);
 
-		m_panel = CCScale9Sprite::createWithSpriteFrameName("GJ_square01.png");
+		m_panel = CCScale9Sprite::create("GJ_square01.png");
 		m_panel->setContentSize({360.f, 240.f});
 		m_panel->setPosition(winSize / 2);
 		m_panel->setOpacity(255);
@@ -56,13 +56,14 @@ public:
 
 		auto menu = CCMenu::create();
 		menu->setPosition(m_panel->getPosition());
+		menu->setTouchPriority(-600);
 		this->addChild(menu, 3);
 
 		bool muted = Mod::get()->getSavedValue<bool>("mute_death_sfx", false);
 		bool useCustom = Mod::get()->getSavedValue<bool>("use_custom_death", false);
 
-		auto offSpr = CCSprite::createWithSpriteFrameName("GJ_checkOff_001.png");
-		auto onSpr = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
+		auto offSpr = CCSprite::create("GJ_checkOff_001.png");
+		auto onSpr = CCSprite::create("GJ_checkOn_001.png");
 
 		auto muteToggle = CCMenuItemToggler::create(
 			offSpr,
@@ -79,8 +80,8 @@ public:
 		muteLabel->setPosition({-100.f, 35.f});
 		menu->addChild(muteLabel);
 
-		auto cOff = CCSprite::createWithSpriteFrameName("GJ_checkOff_001.png");
-		auto cOn = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
+		auto cOff = CCSprite::create("GJ_checkOff_001.png");
+		auto cOn = CCSprite::create("GJ_checkOn_001.png");
 
 		auto customToggle = CCMenuItemToggler::create(
 			cOff,
@@ -110,7 +111,7 @@ public:
 
 		menu->addChild(m_pathInput);
 
-		auto closeSprite = CCSprite::createWithSpriteFrameName("GJ_closeBtn_001.png");
+		auto closeSprite = CCSprite::create("GJ_closeBtn_001.png");
 		closeSprite->setScale(0.7f);
 
 		auto closeBtn = CCMenuItemSpriteExtra::create(
@@ -122,8 +123,7 @@ public:
 		menu->addChild(closeBtn);
 
 		m_panel->setScale(0.9f);
-		m_panel->runAction(
-			CCEaseBackOut::create(CCScaleTo::create(0.18f, 1.0f)));
+		m_panel->runAction(CCEaseBackOut::create(CCScaleTo::create(0.18f, 1.0f)));
 
 		return true;
 	}
@@ -151,8 +151,11 @@ public:
 	{
 		auto p = this->convertTouchToNodeSpace(touch);
 		if (!m_panel->boundingBox().containsPoint(p))
+		{
 			onClose(nullptr);
-		return true;
+			return true;
+		}
+		return false;
 	}
 
 	void onClose(CCObject *)
